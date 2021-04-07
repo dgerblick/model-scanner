@@ -4,6 +4,7 @@
 #include <GL/glut.h>
 #include <GL/gl.h>
 #include <model_scanner/Camera.h>
+#include <model_scanner/AprilTagDetector.h>
 
 namespace model_scanner {
 
@@ -16,12 +17,23 @@ public:
 
 private:
   Camera _camera;
-  GLuint _tex;
+  AprilTagDetector _aprilTagDetector;
+
+  //GLuint _tex;
+  GLuint _tex[4];
+  GLuint _frameBuffers[4];
 
   GLuint _width;
   GLuint _height;
   std::string _winname;
   GLuint _mainWindow;
+
+  cv::Mat _projMatrix;
+
+  void render0();
+  void render1();
+  void render2();
+  void render3();
 
   static void idle();
   static void resize(int width, int height);

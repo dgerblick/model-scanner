@@ -10,7 +10,7 @@ public:
   struct Calibration {
     cv::Mat k;
     cv::Mat d;
-  };
+  } calibration;
 
   Camera(const std::string& deviceName, const std::string& calibrationFile);
   ~Camera();
@@ -24,7 +24,6 @@ private:
   std::string _deviceName;
   std::string _calibrationFile;
   cv::VideoCapture _cap;
-  Calibration _calibration;
 };
 
 }  // namespace model_scanner

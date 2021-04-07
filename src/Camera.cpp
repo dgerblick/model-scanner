@@ -9,11 +9,11 @@ Camera::Camera(const std::string& deviceName,
     _cap(deviceName) {
   cv::FileStorage fs(_calibrationFile, cv::FileStorage::Mode::READ);
   if (!fs.isOpened()) {
-    _calibration.k = cv::Mat::eye(3, 3, CV_64F);
-    _calibration.d = cv::Mat::zeros(1, 5, CV_64F);
+    calibration.k = cv::Mat::eye(3, 3, CV_64F);
+    calibration.d = cv::Mat::zeros(1, 5, CV_64F);
   } else {
-    fs["k"] >> _calibration.k;
-    fs["d"] >> _calibration.d;
+    fs["k"] >> calibration.k;
+    fs["d"] >> calibration.d;
     fs.release();
   }
 
@@ -31,14 +31,14 @@ cv::Mat Camera::getFrame() {
   _cap >> rawImage;
   if (rawImage.empty())
     return rawImage;
-  cv::undistort(rawImage, undistorted, _calibration.k, _calibration.d);
+  cv::undistort(rawImage, undistorted, calibration.k, calibration.d);
   return undistorted;
 }
 
 void Camera::writeCameraInfo() {
   cv::FileStorage fs(_calibrationFile, cv::FileStorage::Mode::WRITE);
-  fs << "k" << _calibration.k;
-  fs << "d" << _calibration.d;
+  fs << "k" << calibration.k;
+  fs << "d" << calibration.d;
 }
 
 }  // namespace model_scanner
