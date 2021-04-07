@@ -1,17 +1,34 @@
 #include <iostream>
-#include <unistd.h>
+#include <getopt.h>
 #include <opencv2/opencv.hpp>
 #include <apriltag/apriltag.h>
 #include <apriltag/tagStandard41h12.h>
+#include <model_scanner/Camera.h>
 
 int main(int argc, char** argv) {
   std::string deviceName = "/dev/video0";
+  std::string outputDir = "untitled";
+  std::string cameraInfo = "camera_info.yml";
 
-  int c;
-  while ((c = getopt(argc, argv, "c:")) != -1) {
-    switch (c) {
-      case 'c':
+  static struct option longopts[] = {
+    { "device", required_argument, nullptr, 'd' },
+    { "output", required_argument, nullptr, 'o' },
+    { "camera_info", required_argument, nullptr, 'c' },
+    { 0, 0, 0, 0 }
+  }; 
+
+  int longind = 0;
+  int opt;
+  while ((opt = getopt_long(argc, argv, "d:o:c:", longopts, &longind)) != -1) {
+    switch (opt) {
+      case 'd':
         deviceName = optarg;
+        break;
+      case 'o':
+        outputDir = optarg;
+        break;
+      case 'c':
+        outputDir = optarg;
         break;
       default:
         return -1;
@@ -20,11 +37,7 @@ int main(int argc, char** argv) {
 
   cv::Mat frame;
   cv::Mat gray;
-  cv::VideoCapture cap(deviceName, cv::CAP_V4L);
-  if (!cap.isOpened()) {
-    std::cerr << "Unable to open camera" << std::endl;
-    return -1;
-  }
+  model_scanner::Camera camera(deviceName, cameraInfo);
 
   apriltag_family_t* tf = tagStandard41h12_create();
   apriltag_detector_t* td = apriltag_detector_create();
@@ -36,7 +49,7 @@ int main(int argc, char** argv) {
   td->refine_edges = 1;
 
   while (1) {
-    cap >> frame;
+    frame = camera.getFrame();
     if (frame.empty()) {
       std::cerr << "Frame is empty" << std::endl;
       break;
@@ -78,11 +91,12 @@ int main(int argc, char** argv) {
 
     cv::imshow("Webcam", frame);
     if (cv::waitKey(1) == 27) {
-      std::cerr << "Exiting..." << std::endl;
+      std::cout << "Exiting..." << std::endl;
       break;
     }
   }
 
+  camera.writeCameraInfo();
   apriltag_detector_destroy(td);
   tagStandard41h12_destroy(tf);
   return 0;

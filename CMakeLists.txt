@@ -15,7 +15,9 @@ include_directories(
   ${apriltag_INCLUDE_DIRS}
 )
 
-add_executable(model-scanner src/main.cpp)
+file(GLOB model_scanner_SRC "src/*.cpp")
+
+add_executable(model-scanner ${model_scanner_SRC})
 
 target_link_libraries(model-scanner
   ${OpenCV_LIBRARIES}
