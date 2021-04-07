@@ -1,8 +1,8 @@
 #include <iostream>
 #include <getopt.h>
 #include <opencv2/opencv.hpp>
+#include <GL/glew.h>
 #include <GL/glut.h>
-#include <GL/gl.h>
 #include <model_scanner/Window.h>
 
 int main(int argc, char** argv) {

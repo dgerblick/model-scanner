@@ -1,8 +1,8 @@
 #ifndef MODEL_SCANNER_WINDOW_H
 #define MODEL_SCANNER_WINDOW_H
 
+#include <GL/glew.h>
 #include <GL/glut.h>
-#include <GL/gl.h>
 #include <model_scanner/Camera.h>
 #include <model_scanner/AprilTagDetector.h>
 
@@ -22,13 +22,14 @@ private:
   //GLuint _tex;
   GLuint _tex[4];
   GLuint _frameBuffers[4];
+  GLuint _depthRenderBuffers[4];
 
   GLuint _width;
   GLuint _height;
   std::string _winname;
   GLuint _mainWindow;
 
-  cv::Mat _projMatrix;
+  GLdouble _projMatrix[4][4];
 
   void render0();
   void render1();
