@@ -7,16 +7,13 @@ Camera::Camera(const std::string& deviceName,
   : _deviceName(deviceName),
     _calibrationFile(calibrationFile),
     _cap(deviceName) {
-  cv::FileStorage fs(calibrationFile, cv::FileStorage::Mode::READ);
+  cv::FileStorage fs(_calibrationFile, cv::FileStorage::Mode::READ);
   if (!fs.isOpened()) {
     _calibration.k = cv::Mat::eye(3, 3, CV_64F);
     _calibration.d = cv::Mat::zeros(1, 5, CV_64F);
   } else {
     fs["k"] >> _calibration.k;
     fs["d"] >> _calibration.d;
-
-    std::cout << _calibration.k << std::endl;
-    std::cout << _calibration.d << std::endl;
     fs.release();
   }
 }

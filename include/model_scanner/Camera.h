@@ -12,8 +12,7 @@ public:
     cv::Mat d;
   };
 
-  Camera(const std::string& deviceName = "/dev/video0",
-         const std::string& calibrationFile = "camera_info.yml");
+  Camera(const std::string& deviceName, const std::string& calibrationFile);
   ~Camera();
 
   cv::Mat getFrame();
