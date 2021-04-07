@@ -6,7 +6,6 @@ Window::Window(const std::string& deviceName,
                const std::string& calibrationFile, GLuint width, GLuint height,
                const std::string& winname)
   : _camera(deviceName, calibrationFile),
-    //_tex(width, height, cv::ogl::Texture2D::Format::RGB),
     _width(width),
     _height(height),
     _winname(winname) {
@@ -17,6 +16,13 @@ Window::Window(const std::string& deviceName,
   }
   gWindow = this;
 
+  if (_width == 0) {
+    _width = _camera.width;
+  }
+  if (_height == 0) {
+    _height = _camera.height;
+  }
+
   glutInitWindowSize(_width, _height);
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
@@ -26,25 +32,12 @@ Window::Window(const std::string& deviceName,
   glutIdleFunc(Window::idle);
   glutReshapeFunc(Window::resize);
   glutDisplayFunc(Window::display);
-  Window::init();
 
-  // GLuint w = _width / 2;
-  // GLuint h = _height / 2;
-  //_subWindow1 = glutCreateSubWindow(_mainWindow, 0, 0, w, h);
-  // glutDisplayFunc(Window::display1);
-  // Window::init();
-
-  //_subWindow2 = glutCreateSubWindow(_mainWindow, w, 0, w, h);
-  // glutDisplayFunc(Window::display2);
-  // Window::init();
-
-  //_subWindow3 = glutCreateSubWindow(_mainWindow, 0, h, w, h);
-  // glutDisplayFunc(Window::display3);
-  // Window::init();
-
-  //_subWindow4 = glutCreateSubWindow(_mainWindow, w, h, w, h);
-  // glutDisplayFunc(Window::display4);
-  // Window::init();
+  glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+  glEnable(GL_LIGHT0);
+  glEnable(GL_LIGHTING);
+  glEnable(GL_COLOR_MATERIAL);
+  glEnable(GL_DEPTH_TEST);
 }
 
 Window::~Window() {
@@ -52,23 +45,7 @@ Window::~Window() {
     gWindow = nullptr;
 }
 
-void Window::init() {
-  glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-  glEnable(GL_LIGHT0);
-  glEnable(GL_LIGHTING);
-  glEnable(GL_COLOR_MATERIAL);
-  glEnable(GL_DEPTH_TEST);
-
-  glBindTexture(GL_TEXTURE_2D, _tex);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glBindTexture(GL_TEXTURE_2D, 0);
-}
-
 void Window::idle() {
-  // cv::ogl::convertToGLTexture2D(gWindow->_camera.getFrame(), gWindow->_tex);
   cv::Mat frame = gWindow->_camera.getFrame();
   cv::cvtColor(frame, frame, cv::ColorConversionCodes::COLOR_BGR2RGB);
   cv::flip(frame, frame, 0);
@@ -91,9 +68,16 @@ void Window::idle() {
   glutPostRedisplay();
 }
 
-void Window::resize(int width, int height) {
-  glutReshapeWindow(gWindow->_width, gWindow->_height);
-  glViewport(0, 0, gWindow->_width, gWindow->_height);
+void Window::resize(int w, int h) {
+  double aspect = (double) gWindow->_camera.width / gWindow->_camera.height;
+
+  glutReshapeWindow(w, h);
+  if ((double) w / h > aspect)
+    glViewport((int) (w - h * aspect) / 2, 0, (int) (h * aspect), h);
+  else
+    glViewport(0, (int) (h - w / aspect) / 2, w, (int) (w / aspect));
+  gWindow->_width = w;
+  gWindow->_height = h;
 }
 
 void Window::display() {

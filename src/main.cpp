@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  model_scanner::Window window(deviceName, cameraInfo, 800, 600);
+  model_scanner::Window window(deviceName, cameraInfo);
   glutMainLoop();
   return 0;
 }

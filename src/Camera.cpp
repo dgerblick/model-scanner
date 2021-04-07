@@ -16,6 +16,9 @@ Camera::Camera(const std::string& deviceName,
     fs["d"] >> _calibration.d;
     fs.release();
   }
+
+  width = _cap.get(cv::VideoCaptureProperties::CAP_PROP_FRAME_WIDTH);
+  height = _cap.get(cv::VideoCaptureProperties::CAP_PROP_FRAME_HEIGHT);
 }
 
 Camera::~Camera() {

@@ -10,7 +10,7 @@ namespace model_scanner {
 class Window {
 public:
   Window(const std::string& deviceName, const std::string& calibrationFile,
-         GLuint width, GLuint height,
+         GLuint width = 0, GLuint height = 0,
          const std::string& winname = "Model Scanner");
   ~Window();
 
@@ -22,8 +22,6 @@ private:
   GLuint _height;
   std::string _winname;
   GLuint _mainWindow;
-
-  void init();
 
   static void idle();
   static void resize(int width, int height);

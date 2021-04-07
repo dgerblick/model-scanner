@@ -18,6 +18,8 @@ public:
   cv::Mat getFrame();
   void writeCameraInfo();
 
+  int width;
+  int height;
 private:
   std::string _deviceName;
   std::string _calibrationFile;
