@@ -13,8 +13,6 @@ find_package(GLEW REQUIRED)
 find_package(OpenCV 4 REQUIRED)
 pkg_search_module(apriltag REQUIRED apriltag)
 
-message(WARN ${OpenCV_INCLUDE_DIRS})
-
 include_directories(
   include
   ${OPENGL_INCLUDE_DIRS}
@@ -34,4 +32,12 @@ target_link_libraries(model-scanner
   ${GLEW_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${apriltag_LIBRARIES}
+)
+
+add_custom_command(TARGET model-scanner POST_BUILD
+  DEPENDS ${CMAKE_SOURCE_DIR}/shaders
+  COMMAND ${CMAKE_COMMAND} -E copy_directory              
+          ${CMAKE_SOURCE_DIR}/shaders 
+          ${CMAKE_CURRENT_BINARY_DIR}/shaders
+  COMMENT "Copying shaders" VERBATIM
 )

@@ -1,4 +1,6 @@
 #include <model_scanner/Window.h>
+#include <fstream>
+#include <sstream>
 
 namespace model_scanner {
 
@@ -95,7 +97,42 @@ Window::Window(const std::string& deviceName,
   glBindTexture(GL_TEXTURE_2D, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
-}
+
+  GLint status;
+
+  std::ifstream maskShaderFile("shaders/mask.glsl");
+  std::stringstream maskShaderSrc;
+  maskShaderSrc << maskShaderFile.rdbuf();
+  std::string maskShaderStr = maskShaderSrc.str();
+  const char* maskShaderSrcCStr = maskShaderStr.c_str();
+
+  GLuint maskShader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(maskShader, 1, &maskShaderSrcCStr, nullptr);
+  glCompileShader(maskShader);
+  glGetShaderiv(maskShader, GL_COMPILE_STATUS, &status);
+  if (status != GL_TRUE) {
+    char buffer[512];
+    glGetShaderInfoLog(maskShader, 512, nullptr, buffer);
+    std::cerr << "Error compiling shader: " << std::endl << buffer << std::endl;
+    return;
+  }
+
+  _prog = glCreateProgram();
+  glAttachShader(_prog, maskShader);
+  glLinkProgram(_prog);
+  glGetProgramiv(_prog, GL_LINK_STATUS, &status);
+  if (status != GL_TRUE) {
+    char buffer[512];
+    glGetProgramInfoLog(_prog, 512, nullptr, buffer);
+    std::cerr << "Error linking shader: " << std::endl << buffer << std::endl;
+    return;
+  }
+
+  glDeleteShader(maskShader);
+
+  _maskShaderTexLoc = glGetUniformLocation(_prog, "image");
+  _maskShaderScreenSizeLoc = glGetUniformLocation(_prog, "screenSize");
+}  // namespace model_scanner
 
 Window::~Window() {
   if (gWindow == this)
@@ -120,12 +157,14 @@ void Window::render0() {
 }
 
 void Window::render1() {
-  GLfloat verts[8][3]{
-    { -TAG_SIZE / 2, -TAG_SIZE / 2, TAG_SIZE / 2 }, { -TAG_SIZE / 2, -TAG_SIZE / 2, 0 },
-    { -TAG_SIZE / 2, TAG_SIZE / 2, 0 }, { -TAG_SIZE / 2, TAG_SIZE / 2, TAG_SIZE / 2 },
-    { TAG_SIZE / 2, -TAG_SIZE / 2, TAG_SIZE / 2 },  { TAG_SIZE / 2, -TAG_SIZE / 2, 0 },
-    { TAG_SIZE / 2, TAG_SIZE / 2,0 },  { TAG_SIZE / 2, TAG_SIZE / 2, TAG_SIZE / 2 }
-  };
+  GLfloat verts[8][3]{ { MIN_X, MIN_Y, TAG_SIZE / 2 },
+                       { MIN_X, MIN_Y, 0 },
+                       { MIN_X, MAX_Y, 0 },
+                       { MIN_X, MAX_Y, TAG_SIZE / 2 },
+                       { MAX_X, MIN_Y, TAG_SIZE / 2 },
+                       { MAX_X, MIN_Y, 0 },
+                       { MAX_X, MAX_Y, 0 },
+                       { MAX_X, MAX_Y, TAG_SIZE / 2 } };
   GLint faces[6][4]{ { 0, 1, 2, 3 }, { 3, 2, 6, 7 }, { 7, 6, 5, 4 },
                      { 4, 5, 1, 0 }, { 5, 6, 2, 1 }, { 7, 4, 0, 3 } };
 
@@ -155,7 +194,7 @@ void Window::render1() {
 
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  glLoadMatrixd((GLdouble*) _projMatrix);
+  glLoadMatrixf((GLfloat*) _projMatrix);
 
   glPopAttrib();
   cv::Mat modelView = _aprilTagDetector.getPose(0);
@@ -163,7 +202,7 @@ void Window::render1() {
     glClear(GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixd((GLdouble*) modelView.data);
+    glLoadMatrixf((GLfloat*) modelView.data);
 
     glBegin(GL_QUADS);
     for (int i = 0; i < 6; i++) {
@@ -184,6 +223,60 @@ void Window::render1() {
 }
 
 void Window::render2() {
+  glBindFramebuffer(GL_FRAMEBUFFER, _frameBuffers[2]);
+
+  glPushMatrix();
+  glPushAttrib(GL_ENABLE_BIT);
+
+  glLoadIdentity();
+  gluOrtho2D(0, 1, 0, 1);
+
+  glDisable(GL_DEPTH_TEST);
+
+  glBegin(GL_QUADS);
+  glColor3f(0.0, 0.0, 0.0);
+  glTexCoord2d(0.0, 0.0);
+  glVertex2d(0.0, 0.0);
+  glTexCoord2d(1.0, 0.0);
+  glVertex2d(1.0, 0.0);
+  glTexCoord2d(1.0, 1.0);
+  glVertex2d(1.0, 1.0);
+  glTexCoord2d(0.0, 1.0);
+  glVertex2d(0.0, 1.0);
+  glEnd();
+
+  glLoadMatrixf((GLfloat*) _projMatrix);
+
+  glPopAttrib();
+  cv::Mat modelView = _aprilTagDetector.getPose(0);
+  if (!modelView.empty()) {
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadMatrixf((GLfloat*) modelView.data);
+
+    glUseProgram(_prog);
+    glBindTexture(GL_TEXTURE_2D, _tex[0]);
+    glUniform1ui(_maskShaderTexLoc, 0);
+    glUniform2f(_maskShaderScreenSizeLoc, _camera.width, _camera.height);
+
+    glBegin(GL_QUADS);
+    glVertex3d(MIN_X, MIN_Y, 0);
+    glVertex3d(MIN_X, MAX_Y, 0);
+    glVertex3d(MAX_X, MAX_Y, 0);
+    glVertex3d(MAX_X, MIN_Y, 0);
+    glEnd();
+
+    glUseProgram(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);
+  }
+
+  glPopMatrix();
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Window::render3() {

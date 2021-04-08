@@ -50,26 +50,26 @@ void AprilTagDetector::setFrame(const cv::Mat& frame) {
       _info.tagsize = _tagSizes[det->id];
       apriltag_pose_t pose;
       estimate_tag_pose(&_info, &pose);
-      _lastFrameTagPos[det->id] = cv::Mat(4, 4, CV_64F);
-      _lastFrameTagPos[det->id].at<double>(0, 0) = pose.R->data[0];
-      _lastFrameTagPos[det->id].at<double>(0, 1) = pose.R->data[3];
-      _lastFrameTagPos[det->id].at<double>(0, 2) = -pose.R->data[6];
-      _lastFrameTagPos[det->id].at<double>(0, 3) = 0.0;
+      _lastFrameTagPos[det->id] = cv::Mat(4, 4, CV_32F);
+      _lastFrameTagPos[det->id].at<float>(0, 0) = pose.R->data[0];
+      _lastFrameTagPos[det->id].at<float>(0, 1) = pose.R->data[3];
+      _lastFrameTagPos[det->id].at<float>(0, 2) = -pose.R->data[6];
+      _lastFrameTagPos[det->id].at<float>(0, 3) = 0.0;
 
-      _lastFrameTagPos[det->id].at<double>(1, 0) = pose.R->data[1];
-      _lastFrameTagPos[det->id].at<double>(1, 1) = pose.R->data[4];
-      _lastFrameTagPos[det->id].at<double>(1, 2) = -pose.R->data[7];
-      _lastFrameTagPos[det->id].at<double>(1, 3) = 0.0;
+      _lastFrameTagPos[det->id].at<float>(1, 0) = pose.R->data[1];
+      _lastFrameTagPos[det->id].at<float>(1, 1) = pose.R->data[4];
+      _lastFrameTagPos[det->id].at<float>(1, 2) = -pose.R->data[7];
+      _lastFrameTagPos[det->id].at<float>(1, 3) = 0.0;
 
-      _lastFrameTagPos[det->id].at<double>(2, 0) = -pose.R->data[2];
-      _lastFrameTagPos[det->id].at<double>(2, 1) = -pose.R->data[5];
-      _lastFrameTagPos[det->id].at<double>(2, 2) = pose.R->data[8];
-      _lastFrameTagPos[det->id].at<double>(2, 3) = 0.0;
+      _lastFrameTagPos[det->id].at<float>(2, 0) = -pose.R->data[2];
+      _lastFrameTagPos[det->id].at<float>(2, 1) = -pose.R->data[5];
+      _lastFrameTagPos[det->id].at<float>(2, 2) = pose.R->data[8];
+      _lastFrameTagPos[det->id].at<float>(2, 3) = 0.0;
 
-      _lastFrameTagPos[det->id].at<double>(3, 0) = pose.t->data[0];
-      _lastFrameTagPos[det->id].at<double>(3, 1) = pose.t->data[1];
-      _lastFrameTagPos[det->id].at<double>(3, 2) = -pose.t->data[2];
-      _lastFrameTagPos[det->id].at<double>(3, 3) = 1.0;
+      _lastFrameTagPos[det->id].at<float>(3, 0) = pose.t->data[0];
+      _lastFrameTagPos[det->id].at<float>(3, 1) = pose.t->data[1];
+      _lastFrameTagPos[det->id].at<float>(3, 2) = -pose.t->data[2];
+      _lastFrameTagPos[det->id].at<float>(3, 3) = 1.0;
     } else {
       std::cout << "Warning: No size known for tag " << det->id << std::endl;
     }
