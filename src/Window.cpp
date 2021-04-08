@@ -17,15 +17,15 @@ Window::Window(const std::string& deviceName,
   }
   gWindow = this;
 
-  AprilTagDetector::TagParams params = { .id = 0, .tagSize = 0.08333333333 };
+  AprilTagDetector::TagParams params = { .id = 0, .tagSize = TAG_SIZE };
   _aprilTagDetector.addTagParams(params);
 
   double fx = _camera.calibration.k.at<double>(0, 0);
   double fy = _camera.calibration.k.at<double>(1, 1);
   double cx = _camera.calibration.k.at<double>(0, 2);
   double cy = _camera.calibration.k.at<double>(1, 2);
-  double znear = 0.01;
   double zfar = 10.0;
+  double znear = 0.01;
 
   _projMatrix[0][0] = 2.0 * fx / _camera.width;
   _projMatrix[0][1] = 0.0;
@@ -39,12 +39,12 @@ Window::Window(const std::string& deviceName,
 
   _projMatrix[2][0] = 1.0 - 2.0 * cx / _camera.width;
   _projMatrix[2][1] = 2.0 * cy / _camera.height - 1.0;
-  _projMatrix[2][2] = (zfar + znear) / (zfar - znear);
+  _projMatrix[2][2] = (zfar + znear) / (znear - zfar);
   _projMatrix[2][3] = -1.0;
 
   _projMatrix[3][0] = 0.0;
   _projMatrix[3][1] = 0.0;
-  _projMatrix[3][2] = -2.0 * znear * zfar / (znear - zfar);
+  _projMatrix[3][2] = -2.0 * znear * zfar / (zfar - znear);
   _projMatrix[3][3] = 0.0;
 
   if (_width == 0)
@@ -120,9 +120,12 @@ void Window::render0() {
 }
 
 void Window::render1() {
-  GLfloat verts[8][3]{ { -1, -1, 1 }, { -1, -1, -1 }, { -1, 1, -1 },
-                       { -1, 1, 1 },  { 1, -1, 1 },   { 1, -1, -1 },
-                       { 1, 1, -1 },  { 1, 1, 1 } };
+  GLfloat verts[8][3]{
+    { -TAG_SIZE / 2, -TAG_SIZE / 2, TAG_SIZE / 2 }, { -TAG_SIZE / 2, -TAG_SIZE / 2, 0 },
+    { -TAG_SIZE / 2, TAG_SIZE / 2, 0 }, { -TAG_SIZE / 2, TAG_SIZE / 2, TAG_SIZE / 2 },
+    { TAG_SIZE / 2, -TAG_SIZE / 2, TAG_SIZE / 2 },  { TAG_SIZE / 2, -TAG_SIZE / 2, 0 },
+    { TAG_SIZE / 2, TAG_SIZE / 2,0 },  { TAG_SIZE / 2, TAG_SIZE / 2, TAG_SIZE / 2 }
+  };
   GLint faces[6][4]{ { 0, 1, 2, 3 }, { 3, 2, 6, 7 }, { 7, 6, 5, 4 },
                      { 4, 5, 1, 0 }, { 5, 6, 2, 1 }, { 7, 4, 0, 3 } };
 
@@ -153,18 +156,27 @@ void Window::render1() {
   glBindTexture(GL_TEXTURE_2D, 0);
 
   glLoadMatrixd((GLdouble*) _projMatrix);
-  gluLookAt(3, 3, 3, 0, 0, 0, 0, 1, 0);
-  glPopAttrib();
-  glClear(GL_DEPTH_BUFFER_BIT);
 
-  glBegin(GL_QUADS);
-  for (int i = 0; i < 6; i++) {
-    glColor3d(i / 6.0, (i % 2) / 2.0, (i % 3) / 3.0);
-    for (int j = 0; j < 4; j++) {
-      glVertex3fv(&verts[faces[i][j]][0]);
+  glPopAttrib();
+  cv::Mat modelView = _aprilTagDetector.getPose(0);
+  if (!modelView.empty()) {
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadMatrixd((GLdouble*) modelView.data);
+
+    glBegin(GL_QUADS);
+    for (int i = 0; i < 6; i++) {
+      glColor3d(i / 6.0, (i % 2) / 2.0, (i % 3) / 3.0);
+      for (int j = 0; j < 4; j++) {
+        glVertex3fv(&verts[faces[i][j]][0]);
+      }
     }
+    glEnd();
+
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);
   }
-  glEnd();
 
   glPopMatrix();
 

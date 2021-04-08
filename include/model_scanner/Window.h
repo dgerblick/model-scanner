@@ -41,6 +41,8 @@ private:
   static void display();
 
   static Window* gWindow;
+
+  static constexpr double TAG_SIZE = 0.08333333333;
 };
 
 }  // namespace model_scanner
