@@ -3,6 +3,7 @@
 
 #include <GL/glew.h>
 #include <GL/glut.h>
+#include <glm/matrix.hpp>
 #include <model_scanner/Camera.h>
 #include <model_scanner/AprilTagDetector.h>
 
@@ -29,7 +30,7 @@ private:
   std::string _winname;
   GLuint _mainWindow;
 
-  GLfloat _projMatrix[4][4];
+  glm::mat4 _projMatrix;
 
   GLuint _prog;
   GLuint _maskShaderTexLoc;

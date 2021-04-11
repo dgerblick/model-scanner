@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <glm/matrix.hpp>
 #include <opencv2/opencv.hpp>
 #include <apriltag/tagStandard41h12.h>
 #include <apriltag/apriltag.h>
@@ -23,14 +24,14 @@ public:
 
   void addTagParams(TagParams params);
   void setFrame(const cv::Mat& frame);
-  cv::Mat getPose(int id);
+  glm::mat4 getPose(int id);
 
 private:
   apriltag_detector_t* _td;
   apriltag_family_t* _tf;
   std::map<int, double> _tagSizes;
 
-  std::map<int, cv::Mat> _lastFrameTagPos;
+  std::map<int, glm::mat4> _lastFrameTagPos;
   apriltag_detection_info_t _info;
 };
 

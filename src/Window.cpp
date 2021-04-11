@@ -1,4 +1,5 @@
 #include <model_scanner/Window.h>
+#include <glm/gtc/type_ptr.hpp>
 #include <fstream>
 #include <sstream>
 
@@ -132,7 +133,7 @@ Window::Window(const std::string& deviceName,
 
   _maskShaderTexLoc = glGetUniformLocation(_prog, "image");
   _maskShaderScreenSizeLoc = glGetUniformLocation(_prog, "screenSize");
-}  // namespace model_scanner
+}
 
 Window::~Window() {
   if (gWindow == this)
@@ -194,15 +195,15 @@ void Window::render1() {
 
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  glLoadMatrixf((GLfloat*) _projMatrix);
+  glLoadMatrixf(glm::value_ptr(_projMatrix));
 
   glPopAttrib();
-  cv::Mat modelView = _aprilTagDetector.getPose(0);
-  if (!modelView.empty()) {
+  glm::mat4 modelView = _aprilTagDetector.getPose(0);
+  if (modelView != glm::mat4()) {
     glClear(GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixf((GLfloat*) modelView.data);
+    glLoadMatrixf(glm::value_ptr(modelView));
 
     glBegin(GL_QUADS);
     for (int i = 0; i < 6; i++) {
@@ -245,15 +246,15 @@ void Window::render2() {
   glVertex2d(0.0, 1.0);
   glEnd();
 
-  glLoadMatrixf((GLfloat*) _projMatrix);
+  glLoadMatrixf(glm::value_ptr(_projMatrix));
 
   glPopAttrib();
-  cv::Mat modelView = _aprilTagDetector.getPose(0);
-  if (!modelView.empty()) {
+  glm::mat4 modelView = _aprilTagDetector.getPose(0);
+  if (modelView != glm::mat4()) {
     glClear(GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixf((GLfloat*) modelView.data);
+    glLoadMatrixf(glm::value_ptr(modelView));
 
     glUseProgram(_prog);
     glBindTexture(GL_TEXTURE_2D, _tex[0]);
