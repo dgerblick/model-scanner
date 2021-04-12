@@ -35,8 +35,6 @@ private:
   GLuint _prog;
   GLuint _maskShaderTexLoc;
   GLuint _maskShaderScreenSizeLoc;
-  GLuint _maskShaderModelViewLoc;
-  GLuint _maskShaderProjectionLoc;
 
   void render0();
   void render1();
@@ -52,8 +50,8 @@ private:
   static constexpr double TAG_SIZE = 0.08333333333;
   static constexpr double MIN_X = -0.1;
   static constexpr double MAX_X = 0.1;
-  static constexpr double MIN_Y = 0.08;
-  static constexpr double MAX_Y = 0.175;
+  static constexpr double MIN_Y = -0.175;
+  static constexpr double MAX_Y = -0.08;
 };
 
 }  // namespace model_scanner

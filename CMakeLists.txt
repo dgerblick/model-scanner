@@ -25,6 +25,7 @@ include_directories(
 )
 
 file(GLOB model_scanner_SRC "src/*.cpp")
+file(GLOB model_scanner_SHADERS "/shaders/*.glsl")
 
 add_executable(model-scanner ${model_scanner_SRC})
 
@@ -37,10 +38,9 @@ target_link_libraries(model-scanner
   ${apriltag_LIBRARIES}
 )
 
-add_custom_command(TARGET model-scanner POST_BUILD
-  DEPENDS ${CMAKE_SOURCE_DIR}/shaders
-  COMMAND ${CMAKE_COMMAND} -E copy_directory              
+add_custom_command(TARGET model-scanner
+  MAIN_DEPENDENCY ${model_scanner_SHADERS}
+  COMMAND ${CMAKE_COMMAND} -E create_symlink              
           ${CMAKE_SOURCE_DIR}/shaders 
           ${CMAKE_CURRENT_BINARY_DIR}/shaders
-  COMMENT "Copying shaders" VERBATIM
 )

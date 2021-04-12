@@ -36,13 +36,13 @@ Window::Window(const std::string& deviceName,
   _projMatrix[0][3] = 0.0;
 
   _projMatrix[1][0] = 0.0;
-  _projMatrix[1][1] = -2.0 * fy / _camera.height;
+  _projMatrix[1][1] = 2.0 * fy / _camera.height;
   _projMatrix[1][2] = 0.0;
   _projMatrix[1][3] = 0.0;
 
-  _projMatrix[2][0] = 1.0 - 2.0 * cx / _camera.width;
-  _projMatrix[2][1] = 2.0 * cy / _camera.height - 1.0;
-  _projMatrix[2][2] = (zfar + znear) / (znear - zfar);
+  _projMatrix[2][0] = 0.0;
+  _projMatrix[2][1] = 0.0;
+  _projMatrix[2][2] = -(zfar + znear) / (zfar - znear);
   _projMatrix[2][3] = -1.0;
 
   _projMatrix[3][0] = 0.0;
@@ -260,6 +260,11 @@ void Window::render2() {
     glBindTexture(GL_TEXTURE_2D, _tex[0]);
     glUniform1ui(_maskShaderTexLoc, 0);
     glUniform2f(_maskShaderScreenSizeLoc, _camera.width, _camera.height);
+    glUniform2f(_maskShaderScreenSizeLoc, _camera.width, _camera.height);
+
+    glm::vec4 pos = glm::inverse(modelView) * glm::vec4(glm::vec3(0), 1);
+    glm::vec4 dir = glm::normalize(glm::inverse(modelView) * glm::vec4(0, 0, -1, 1) - pos);
+    std::cout << "(" << dir.x << "\t" << dir.y << "\t" << dir.z << ")\n";
 
     glBegin(GL_QUADS);
     glVertex3d(MIN_X, MIN_Y, 0);

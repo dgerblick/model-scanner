@@ -1,5 +1,6 @@
 uniform sampler2D image;
 uniform vec2 screenSize;
+uniform mat4 invMVP;
 
 void main() {
   vec2 screenCoord = gl_FragCoord.xy / screenSize;
