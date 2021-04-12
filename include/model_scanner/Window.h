@@ -35,6 +35,8 @@ private:
   GLuint _prog;
   GLuint _maskShaderTexLoc;
   GLuint _maskShaderScreenSizeLoc;
+  GLuint _maskShaderinvProjLoc;
+  GLuint _maskShaderInvModelViewLoc;
 
   void render0();
   void render1();

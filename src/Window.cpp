@@ -133,6 +133,8 @@ Window::Window(const std::string& deviceName,
 
   _maskShaderTexLoc = glGetUniformLocation(_prog, "image");
   _maskShaderScreenSizeLoc = glGetUniformLocation(_prog, "screenSize");
+  _maskShaderinvProjLoc = glGetUniformLocation(_prog, "invProj");
+  _maskShaderInvModelViewLoc = glGetUniformLocation(_prog, "invModelView");
 }
 
 Window::~Window() {
@@ -246,7 +248,7 @@ void Window::render2() {
   glVertex2d(0.0, 1.0);
   glEnd();
 
-  glLoadMatrixf(glm::value_ptr(_projMatrix));
+  // glLoadMatrixf(glm::value_ptr(_projMatrix));
 
   glPopAttrib();
   glm::mat4 modelView = _aprilTagDetector.getPose(0);
@@ -254,23 +256,29 @@ void Window::render2() {
     glClear(GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixf(glm::value_ptr(modelView));
+    // glLoadMatrixf(glm::value_ptr(modelView));
+
+    glm::mat4 invProj = glm::inverse(_projMatrix);
+    glm::mat4 invModelView = glm::inverse(modelView);
 
     glUseProgram(_prog);
     glBindTexture(GL_TEXTURE_2D, _tex[0]);
     glUniform1ui(_maskShaderTexLoc, 0);
     glUniform2f(_maskShaderScreenSizeLoc, _camera.width, _camera.height);
-    glUniform2f(_maskShaderScreenSizeLoc, _camera.width, _camera.height);
-
-    glm::vec4 pos = glm::inverse(modelView) * glm::vec4(glm::vec3(0), 1);
-    glm::vec4 dir = glm::normalize(glm::inverse(modelView) * glm::vec4(0, 0, -1, 1) - pos);
-    std::cout << "(" << dir.x << "\t" << dir.y << "\t" << dir.z << ")\n";
+    glUniformMatrix4fv(_maskShaderinvProjLoc, 1, GL_FALSE,
+                       glm::value_ptr(invProj));
+    glUniformMatrix4fv(_maskShaderInvModelViewLoc, 1, GL_FALSE,
+                       glm::value_ptr(invModelView));
 
     glBegin(GL_QUADS);
-    glVertex3d(MIN_X, MIN_Y, 0);
-    glVertex3d(MIN_X, MAX_Y, 0);
-    glVertex3d(MAX_X, MAX_Y, 0);
-    glVertex3d(MAX_X, MIN_Y, 0);
+    // glVertex3d(MIN_X, MIN_Y, 0);
+    // glVertex3d(MIN_X, MAX_Y, 0);
+    // glVertex3d(MAX_X, MAX_Y, 0);
+    // glVertex3d(MAX_X, MIN_Y, 0);
+    glVertex2d(0.0, 0.0);
+    glVertex2d(1.0, 0.0);
+    glVertex2d(1.0, 1.0);
+    glVertex2d(0.0, 1.0);
     glEnd();
 
     glUseProgram(0);
