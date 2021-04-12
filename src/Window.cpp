@@ -40,8 +40,8 @@ Window::Window(const std::string& deviceName,
   _projMatrix[1][2] = 0.0;
   _projMatrix[1][3] = 0.0;
 
-  _projMatrix[2][0] = 0.0;
-  _projMatrix[2][1] = 0.0;
+  _projMatrix[2][0] = 1.0 - 2.0 * cx / _camera.width;
+  _projMatrix[2][1] = 2.0 * cy / _camera.height - 1.0;
   _projMatrix[2][2] = -(zfar + znear) / (zfar - znear);
   _projMatrix[2][3] = -1.0;
 
