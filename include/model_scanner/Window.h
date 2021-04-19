@@ -47,6 +47,8 @@ private:
   static void resize(int width, int height);
   static void display();
 
+  static std::string loadFile(const std::string& filename);
+
   static Window* gWindow;
 
   static constexpr double TAG_SIZE = 0.08333333333;

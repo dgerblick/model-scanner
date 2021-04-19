@@ -101,14 +101,13 @@ Window::Window(const std::string& deviceName,
 
   GLint status;
 
-  std::ifstream maskShaderFile("shaders/mask.glsl");
-  std::stringstream maskShaderSrc;
-  maskShaderSrc << maskShaderFile.rdbuf();
-  std::string maskShaderStr = maskShaderSrc.str();
-  const char* maskShaderSrcCStr = maskShaderStr.c_str();
+  std::string commonShaderStr = loadFile("shaders/common.glsl");
+  std::string maskShaderStr = loadFile("shaders/mask.glsl");
+  const char* maskShaderSrc[] = { commonShaderStr.c_str(),
+                                  maskShaderStr.c_str() };
 
   GLuint maskShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(maskShader, 1, &maskShaderSrcCStr, nullptr);
+  glShaderSource(maskShader, 2, maskShaderSrc, nullptr);
   glCompileShader(maskShader);
   glGetShaderiv(maskShader, GL_COMPILE_STATUS, &status);
   if (status != GL_TRUE) {
@@ -359,6 +358,13 @@ void Window::display() {
   glPopAttrib();
 
   glutSwapBuffers();
+}
+
+std::string Window::loadFile(const std::string& filename) {
+  std::ifstream maskShaderFile(filename);
+  std::stringstream maskShaderSrc;
+  maskShaderSrc << maskShaderFile.rdbuf();
+  return maskShaderSrc.str();
 }
 
 Window* Window::gWindow = nullptr;
