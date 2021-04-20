@@ -101,24 +101,21 @@ Window::Window(const std::string& deviceName,
 
   GLint status;
 
-  std::string commonShaderStr = loadFile("shaders/common.glsl");
-  std::string maskShaderStr = loadFile("shaders/mask.glsl");
-  const char* maskShaderSrc[] = { commonShaderStr.c_str(),
-                                  maskShaderStr.c_str() };
-
-  GLuint maskShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(maskShader, 2, maskShaderSrc, nullptr);
-  glCompileShader(maskShader);
-  glGetShaderiv(maskShader, GL_COMPILE_STATUS, &status);
+  std::string shaderStr = loadFile("shaders/shader.glsl");
+  const char* shaderSrc = shaderStr.c_str();
+  GLuint shader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(shader, 1, &shaderSrc, nullptr);
+  glCompileShader(shader);
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
   if (status != GL_TRUE) {
     char buffer[512];
-    glGetShaderInfoLog(maskShader, 512, nullptr, buffer);
+    glGetShaderInfoLog(shader, 512, nullptr, buffer);
     std::cerr << "Error compiling shader: " << std::endl << buffer << std::endl;
     return;
   }
 
   _prog = glCreateProgram();
-  glAttachShader(_prog, maskShader);
+  glAttachShader(_prog, shader);
   glLinkProgram(_prog);
   glGetProgramiv(_prog, GL_LINK_STATUS, &status);
   if (status != GL_TRUE) {
@@ -128,12 +125,13 @@ Window::Window(const std::string& deviceName,
     return;
   }
 
-  glDeleteShader(maskShader);
+  glDeleteShader(shader);
 
-  _maskShaderTexLoc = glGetUniformLocation(_prog, "image");
-  _maskShaderScreenSizeLoc = glGetUniformLocation(_prog, "screenSize");
-  _maskShaderinvProjLoc = glGetUniformLocation(_prog, "invProj");
-  _maskShaderInvModelViewLoc = glGetUniformLocation(_prog, "invModelView");
+  _shaderMaskModeLoc = glGetUniformLocation(_prog, "maskMode");
+  _shaderTexLoc = glGetUniformLocation(_prog, "image");
+  _shaderScreenSizeLoc = glGetUniformLocation(_prog, "screenSize");
+  _shaderinvProjLoc = glGetUniformLocation(_prog, "invProj");
+  _shaderInvModelViewLoc = glGetUniformLocation(_prog, "invModelView");
 }
 
 Window::~Window() {
@@ -159,68 +157,38 @@ void Window::render0() {
 }
 
 void Window::render1() {
-  GLfloat verts[8][3]{ { MIN_X, MIN_Y, TAG_SIZE / 2 },
-                       { MIN_X, MIN_Y, 0 },
-                       { MIN_X, MAX_Y, 0 },
-                       { MIN_X, MAX_Y, TAG_SIZE / 2 },
-                       { MAX_X, MIN_Y, TAG_SIZE / 2 },
-                       { MAX_X, MIN_Y, 0 },
-                       { MAX_X, MAX_Y, 0 },
-                       { MAX_X, MAX_Y, TAG_SIZE / 2 } };
-  GLint faces[6][4]{ { 0, 1, 2, 3 }, { 3, 2, 6, 7 }, { 7, 6, 5, 4 },
-                     { 4, 5, 1, 0 }, { 5, 6, 2, 1 }, { 7, 4, 0, 3 } };
-
   glBindFramebuffer(GL_FRAMEBUFFER, _frameBuffers[1]);
-
   glPushMatrix();
-  glPushAttrib(GL_ENABLE_BIT);
 
-  glLoadIdentity();
-  gluOrtho2D(0, 1, 0, 1);
-
-  glEnable(GL_TEXTURE_2D);
-  glDisable(GL_DEPTH_TEST);
-
-  glBindTexture(GL_TEXTURE_2D, _tex[0]);
-
-  glBegin(GL_QUADS);
-  glTexCoord2d(0.0, 0.0);
-  glVertex2d(0.0, 0.0);
-  glTexCoord2d(1.0, 0.0);
-  glVertex2d(1.0, 0.0);
-  glTexCoord2d(1.0, 1.0);
-  glVertex2d(1.0, 1.0);
-  glTexCoord2d(0.0, 1.0);
-  glVertex2d(0.0, 1.0);
-  glEnd();
-
-  glBindTexture(GL_TEXTURE_2D, 0);
-
-  glLoadMatrixf(glm::value_ptr(_projMatrix));
-
-  glPopAttrib();
   glm::mat4 modelView = _aprilTagDetector.getPose(0);
   if (modelView != glm::mat4()) {
     glClear(GL_DEPTH_BUFFER_BIT);
+    gluOrtho2D(0, 1, 0, 1);
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixf(glm::value_ptr(modelView));
+    glm::mat4 invProj = glm::inverse(_projMatrix);
+    glm::mat4 invModelView = glm::inverse(modelView);
+
+    glUseProgram(_prog);
+    glBindTexture(GL_TEXTURE_2D, _tex[0]);
+    glUniform1ui(_shaderMaskModeLoc, 0);
+    glUniform1ui(_shaderTexLoc, 0);
+    glUniform2f(_shaderScreenSizeLoc, _camera.width, _camera.height);
+    glUniformMatrix4fv(_shaderinvProjLoc, 1, GL_FALSE, glm::value_ptr(invProj));
+    glUniformMatrix4fv(_shaderInvModelViewLoc, 1, GL_FALSE,
+                       glm::value_ptr(invModelView));
 
     glBegin(GL_QUADS);
-    for (int i = 0; i < 6; i++) {
-      glColor3d(i / 6.0, (i % 2) / 2.0, (i % 3) / 3.0);
-      for (int j = 0; j < 4; j++) {
-        glVertex3fv(&verts[faces[i][j]][0]);
-      }
-    }
+    glVertex2d(0.0, 0.0);
+    glVertex2d(1.0, 0.0);
+    glVertex2d(1.0, 1.0);
+    glVertex2d(0.0, 1.0);
     glEnd();
 
-    glLoadIdentity();
-    glMatrixMode(GL_PROJECTION);
+    glUseProgram(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
   }
 
   glPopMatrix();
-
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -247,7 +215,7 @@ void Window::render2() {
   glVertex2d(0.0, 1.0);
   glEnd();
 
-  // glLoadMatrixf(glm::value_ptr(_projMatrix));
+  glLoadMatrixf(glm::value_ptr(_projMatrix));
 
   glPopAttrib();
   glm::mat4 modelView = _aprilTagDetector.getPose(0);
@@ -255,29 +223,25 @@ void Window::render2() {
     glClear(GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_MODELVIEW);
-    // glLoadMatrixf(glm::value_ptr(modelView));
+    glLoadMatrixf(glm::value_ptr(modelView));
 
     glm::mat4 invProj = glm::inverse(_projMatrix);
     glm::mat4 invModelView = glm::inverse(modelView);
 
     glUseProgram(_prog);
     glBindTexture(GL_TEXTURE_2D, _tex[0]);
-    glUniform1ui(_maskShaderTexLoc, 0);
-    glUniform2f(_maskShaderScreenSizeLoc, _camera.width, _camera.height);
-    glUniformMatrix4fv(_maskShaderinvProjLoc, 1, GL_FALSE,
-                       glm::value_ptr(invProj));
-    glUniformMatrix4fv(_maskShaderInvModelViewLoc, 1, GL_FALSE,
+    glUniform1ui(_shaderMaskModeLoc, 1);
+    glUniform1ui(_shaderTexLoc, 0);
+    glUniform2f(_shaderScreenSizeLoc, _camera.width, _camera.height);
+    glUniformMatrix4fv(_shaderinvProjLoc, 1, GL_FALSE, glm::value_ptr(invProj));
+    glUniformMatrix4fv(_shaderInvModelViewLoc, 1, GL_FALSE,
                        glm::value_ptr(invModelView));
 
     glBegin(GL_QUADS);
-    // glVertex3d(MIN_X, MIN_Y, 0);
-    // glVertex3d(MIN_X, MAX_Y, 0);
-    // glVertex3d(MAX_X, MAX_Y, 0);
-    // glVertex3d(MAX_X, MIN_Y, 0);
-    glVertex2d(0.0, 0.0);
-    glVertex2d(1.0, 0.0);
-    glVertex2d(1.0, 1.0);
-    glVertex2d(0.0, 1.0);
+    glVertex3d(MIN_X, MIN_Y, 0);
+    glVertex3d(MIN_X, MAX_Y, 0);
+    glVertex3d(MAX_X, MAX_Y, 0);
+    glVertex3d(MAX_X, MIN_Y, 0);
     glEnd();
 
     glUseProgram(0);
@@ -361,10 +325,10 @@ void Window::display() {
 }
 
 std::string Window::loadFile(const std::string& filename) {
-  std::ifstream maskShaderFile(filename);
-  std::stringstream maskShaderSrc;
-  maskShaderSrc << maskShaderFile.rdbuf();
-  return maskShaderSrc.str();
+  std::ifstream shaderFile(filename);
+  std::stringstream shaderSrc;
+  shaderSrc << shaderFile.rdbuf();
+  return shaderSrc.str();
 }
 
 Window* Window::gWindow = nullptr;

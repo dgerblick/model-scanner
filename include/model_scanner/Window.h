@@ -33,10 +33,11 @@ private:
   glm::mat4 _projMatrix;
 
   GLuint _prog;
-  GLuint _maskShaderTexLoc;
-  GLuint _maskShaderScreenSizeLoc;
-  GLuint _maskShaderinvProjLoc;
-  GLuint _maskShaderInvModelViewLoc;
+  GLuint _shaderMaskModeLoc;
+  GLuint _shaderTexLoc;
+  GLuint _shaderScreenSizeLoc;
+  GLuint _shaderinvProjLoc;
+  GLuint _shaderInvModelViewLoc;
 
   void render0();
   void render1();
