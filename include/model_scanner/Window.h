@@ -20,7 +20,6 @@ private:
   Camera _camera;
   AprilTagDetector _aprilTagDetector;
 
-  //GLuint _tex;
   GLuint _tex[4];
   GLuint _frameBuffers[4];
   GLuint _depthRenderBuffers[4];
@@ -38,6 +37,7 @@ private:
   GLuint _shaderScreenSizeLoc;
   GLuint _shaderinvProjLoc;
   GLuint _shaderInvModelViewLoc;
+  GLuint _shaderOctreeSsbo;
 
   void render0();
   void render1();
@@ -53,10 +53,24 @@ private:
   static Window* gWindow;
 
   static constexpr double TAG_SIZE = 0.08333333333;
-  static constexpr double MIN_X = -0.1;
-  static constexpr double MAX_X = 0.1;
-  static constexpr double MIN_Y = -0.175;
-  static constexpr double MAX_Y = -0.08;
+  static constexpr double SQUARE_SIZE = 0.05;
+  static constexpr glm::vec3 OFFSET{ 0.0, -0.125, 0.0 };
+  static constexpr uint OCTREE_DEPTH = 2;
+
+  struct OctreeNode {
+    uint hits;
+    uint total;
+    uint _unused[2];
+    glm::vec4 minPoint;
+    glm::vec4 maxPoint;
+  };
+
+  struct Octree {
+    uint depth;
+    uint size;
+    uint _unused[2];
+    OctreeNode nodes[(size_t)(((1 - std::pow(8.0, OCTREE_DEPTH + 1)) / -7))];
+  };
 };
 
 }  // namespace model_scanner

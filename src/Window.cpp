@@ -99,6 +99,35 @@ Window::Window(const std::string& deviceName,
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
+  Octree octree;
+  octree.depth = OCTREE_DEPTH;
+  octree.size = sizeof(octree.nodes) / sizeof(OctreeNode);
+  octree.nodes[0].hits = 0;
+  octree.nodes[0].total = 0;
+  octree.nodes[0].minPoint = glm::vec4(glm::vec3(-SQUARE_SIZE), 1.0);
+  octree.nodes[0].maxPoint = glm::vec4(glm::vec3(SQUARE_SIZE), 1.0);
+  for (size_t i = 1; i < octree.size; ++i) {
+    OctreeNode& node = octree.nodes[i];
+    OctreeNode& parent = octree.nodes[(size_t)((i - 1.0) / 8.0)];
+    node.hits = 0;
+    node.total = 0;
+    node.minPoint.w = 1.0;
+    node.maxPoint.w = 1.0;
+    for (size_t j = 0; j < 3; ++j) {
+      if ((((i - 1) % 8) & (1 << j)) >> j == 0) {
+        node.minPoint[j] = parent.minPoint[j];
+        node.maxPoint[j] = (parent.minPoint[j] + parent.maxPoint[j]) / 2;
+      } else {
+        node.minPoint[j] = (parent.minPoint[j] + parent.maxPoint[j]) / 2;
+        node.maxPoint[j] = parent.maxPoint[j];
+      }
+    }
+  }
+  glGenBuffers(1, &_shaderOctreeSsbo);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, _shaderOctreeSsbo);
+  glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(Octree), &octree,
+                  GL_MAP_WRITE_BIT);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   GLint status;
 
   std::string shaderStr = loadFile("shaders/shader.glsl");
@@ -160,7 +189,7 @@ void Window::render1() {
   glBindFramebuffer(GL_FRAMEBUFFER, _frameBuffers[1]);
   glPushMatrix();
 
-  glm::mat4 modelView = _aprilTagDetector.getPose(0);
+  glm::mat4 modelView = glm::translate(_aprilTagDetector.getPose(0), OFFSET);
   if (modelView != glm::mat4()) {
     glClear(GL_DEPTH_BUFFER_BIT);
     gluOrtho2D(0, 1, 0, 1);
@@ -170,6 +199,8 @@ void Window::render1() {
 
     glUseProgram(_prog);
     glBindTexture(GL_TEXTURE_2D, _tex[0]);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _shaderOctreeSsbo);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _shaderOctreeSsbo);
     glUniform1ui(_shaderMaskModeLoc, 0);
     glUniform1ui(_shaderTexLoc, 0);
     glUniform2f(_shaderScreenSizeLoc, _camera.width, _camera.height);
@@ -186,6 +217,7 @@ void Window::render1() {
 
     glUseProgram(0);
     glBindTexture(GL_TEXTURE_2D, 0);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   }
 
   glPopMatrix();
@@ -218,7 +250,7 @@ void Window::render2() {
   glLoadMatrixf(glm::value_ptr(_projMatrix));
 
   glPopAttrib();
-  glm::mat4 modelView = _aprilTagDetector.getPose(0);
+  glm::mat4 modelView = glm::translate(_aprilTagDetector.getPose(0), OFFSET);
   if (modelView != glm::mat4()) {
     glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -230,6 +262,8 @@ void Window::render2() {
 
     glUseProgram(_prog);
     glBindTexture(GL_TEXTURE_2D, _tex[0]);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _shaderOctreeSsbo);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _shaderOctreeSsbo);
     glUniform1ui(_shaderMaskModeLoc, 1);
     glUniform1ui(_shaderTexLoc, 0);
     glUniform2f(_shaderScreenSizeLoc, _camera.width, _camera.height);
@@ -238,14 +272,15 @@ void Window::render2() {
                        glm::value_ptr(invModelView));
 
     glBegin(GL_QUADS);
-    glVertex3d(MIN_X, MIN_Y, 0);
-    glVertex3d(MIN_X, MAX_Y, 0);
-    glVertex3d(MAX_X, MAX_Y, 0);
-    glVertex3d(MAX_X, MIN_Y, 0);
+    glVertex3d(-SQUARE_SIZE, -SQUARE_SIZE, 0);
+    glVertex3d(-SQUARE_SIZE, SQUARE_SIZE, 0);
+    glVertex3d(SQUARE_SIZE, SQUARE_SIZE, 0);
+    glVertex3d(SQUARE_SIZE, -SQUARE_SIZE, 0);
     glEnd();
 
     glUseProgram(0);
     glBindTexture(GL_TEXTURE_2D, 0);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
     glLoadIdentity();
     glMatrixMode(GL_PROJECTION);
