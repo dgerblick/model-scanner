@@ -65,45 +65,39 @@ float boxIntersect(Box box, Ray ray) {
   vec3 tmaxVals = (box.maxPoint.xyz - ray.origin.xyz) / ray.dir.xyz;
   vec4 point;
   point = rayAt(ray, tminVals.x);
-  if (box.minPoint.x <= point.x && point.x <= box.maxPoint.x &&
-      box.minPoint.y <= point.y && point.y <= box.maxPoint.y &&
+  if (box.minPoint.y <= point.y && point.y <= box.maxPoint.y &&
       box.minPoint.z <= point.z && point.z <= box.maxPoint.z &&
       (hit == 0 || tminVals.x < hit)) {
     hit = tminVals.x;
   }
   point = rayAt(ray, tminVals.y);
   if (box.minPoint.x <= point.x && point.x <= box.maxPoint.x &&
-      box.minPoint.y <= point.y && point.y <= box.maxPoint.y &&
       box.minPoint.z <= point.z && point.z <= box.maxPoint.z &&
-      (hit == 0 || tminVals.x < hit)) {
+      (hit == 0 || tminVals.y < hit)) {
     hit = tminVals.y;
   }
   point = rayAt(ray, tminVals.z);
   if (box.minPoint.x <= point.x && point.x <= box.maxPoint.x &&
       box.minPoint.y <= point.y && point.y <= box.maxPoint.y &&
-      box.minPoint.z <= point.z && point.z <= box.maxPoint.z &&
-      (hit == 0 || tminVals.x < hit)) {
+      (hit == 0 || tminVals.z < hit)) {
     hit = tminVals.z;
   }
   point = rayAt(ray, tmaxVals.x);
-  if (box.minPoint.x <= point.x && point.x <= box.maxPoint.x &&
-      box.minPoint.y <= point.y && point.y <= box.maxPoint.y &&
+  if (box.minPoint.y <= point.y && point.y <= box.maxPoint.y &&
       box.minPoint.z <= point.z && point.z <= box.maxPoint.z &&
-      (hit == 0 || tminVals.x < hit)) {
+      (hit == 0 || tmaxVals.x < hit)) {
     hit = tmaxVals.x;
   }
   point = rayAt(ray, tmaxVals.y);
   if (box.minPoint.x <= point.x && point.x <= box.maxPoint.x &&
-      box.minPoint.y <= point.y && point.y <= box.maxPoint.y &&
       box.minPoint.z <= point.z && point.z <= box.maxPoint.z &&
-      (hit == 0 || tminVals.x < hit)) {
+      (hit == 0 || tmaxVals.y < hit)) {
     hit = tmaxVals.y;
   }
   point = rayAt(ray, tmaxVals.z);
   if (box.minPoint.x <= point.x && point.x <= box.maxPoint.x &&
       box.minPoint.y <= point.y && point.y <= box.maxPoint.y &&
-      box.minPoint.z <= point.z && point.z <= box.maxPoint.z &&
-      (hit == 0 || tminVals.x < hit)) {
+      (hit == 0 || tmaxVals.z < hit)) {
     hit = tmaxVals.z;
   }
 
