@@ -6,8 +6,8 @@
 namespace model_scanner {
 
 Window::Window(const std::string& deviceName,
-               const std::string& calibrationFile, GLuint width, GLuint height,
-               const std::string& winname)
+               const std::string& calibrationFile, uint octreeDepth,
+               GLuint width, GLuint height, const std::string& winname)
   : _camera(deviceName, calibrationFile),
     _aprilTagDetector(_camera),
     _width(width),
@@ -99,16 +99,18 @@ Window::Window(const std::string& deviceName,
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-  Octree octree;
-  octree.depth = OCTREE_DEPTH;
-  octree.size = sizeof(octree.nodes) / sizeof(OctreeNode);
-  octree.nodes[0].total = 1;
-  octree.nodes[0].hits = 0;
-  octree.nodes[0].minPoint = glm::vec4(glm::vec3(-SQUARE_SIZE), 1.0);
-  octree.nodes[0].maxPoint = glm::vec4(glm::vec3(SQUARE_SIZE), 1.0);
-  for (size_t i = 1; i < octree.size; ++i) {
-    OctreeNode& node = octree.nodes[i];
-    OctreeNode& parent = octree.nodes[(size_t)((i - 1.0) / 8.0)];
+  std::vector<OctreeNode> octreeNodeBuffer(
+      (size_t)(((1 - std::pow(8.0, octreeDepth + 1)) / -7)));
+  OctreeHeader octreeHeader;
+  octreeHeader.depth = octreeDepth;
+  octreeHeader.size = octreeNodeBuffer.size();
+  octreeNodeBuffer[0].total = 1;
+  octreeNodeBuffer[0].hits = 0;
+  octreeNodeBuffer[0].minPoint = glm::vec4(glm::vec3(-SQUARE_SIZE), 1.0);
+  octreeNodeBuffer[0].maxPoint = glm::vec4(glm::vec3(SQUARE_SIZE), 1.0);
+  for (size_t i = 1; i < octreeNodeBuffer.size(); ++i) {
+    OctreeNode& node = octreeNodeBuffer[i];
+    OctreeNode& parent = octreeNodeBuffer[(size_t)((i - 1.0) / 8.0)];
     node.total = std::rand() % 100 + 1;
     node.hits = std::rand() % node.total;
     node.minPoint.w = 1.0;
@@ -125,8 +127,15 @@ Window::Window(const std::string& deviceName,
   }
   glGenBuffers(1, &_shaderOctreeSsbo);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, _shaderOctreeSsbo);
-  glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(Octree), &octree,
-                  GL_MAP_WRITE_BIT);
+  glBufferData(GL_SHADER_STORAGE_BUFFER,
+               sizeof(OctreeHeader) +
+                   sizeof(OctreeNode) * octreeNodeBuffer.size(),
+               nullptr, GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(OctreeHeader),
+                  &octreeHeader);
+  glBufferSubData(GL_SHADER_STORAGE_BUFFER, sizeof(OctreeHeader),
+                  sizeof(OctreeNode) * octreeNodeBuffer.size(),
+                  &octreeNodeBuffer[0]);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   GLint status;
 
