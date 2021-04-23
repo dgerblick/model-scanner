@@ -106,8 +106,10 @@ Window::Window(const std::string& deviceName,
   octreeHeader.size = octreeNodeBuffer.size();
   octreeNodeBuffer[0].total = 1;
   octreeNodeBuffer[0].hits = 0;
-  octreeNodeBuffer[0].minPoint = glm::vec4(glm::vec3(-SQUARE_SIZE), 1.0);
-  octreeNodeBuffer[0].maxPoint = glm::vec4(glm::vec3(SQUARE_SIZE), 1.0);
+  octreeNodeBuffer[0].minPoint =
+      glm::vec4(glm::vec3(-SQUARE_SIZE) + OFFSET, 1.0);
+  octreeNodeBuffer[0].maxPoint =
+      glm::vec4(glm::vec3(SQUARE_SIZE) + OFFSET, 1.0);
   for (size_t i = 1; i < octreeNodeBuffer.size(); ++i) {
     OctreeNode& node = octreeNodeBuffer[i];
     OctreeNode& parent = octreeNodeBuffer[(size_t)((i - 1.0) / 8.0)];
@@ -198,7 +200,7 @@ void Window::render1() {
   glBindFramebuffer(GL_FRAMEBUFFER, _frameBuffers[1]);
   glPushMatrix();
 
-  glm::mat4 modelView = glm::translate(_aprilTagDetector.getPose(0), OFFSET);
+  glm::mat4 modelView = _aprilTagDetector.getPose(0);
   if (modelView != glm::mat4()) {
     glClear(GL_DEPTH_BUFFER_BIT);
     gluOrtho2D(0, 1, 0, 1);
@@ -259,7 +261,7 @@ void Window::render2() {
   glLoadMatrixf(glm::value_ptr(_projMatrix));
 
   glPopAttrib();
-  glm::mat4 modelView = glm::translate(_aprilTagDetector.getPose(0), OFFSET);
+  glm::mat4 modelView = _aprilTagDetector.getPose(0);
   if (modelView != glm::mat4()) {
     glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -281,10 +283,10 @@ void Window::render2() {
                        glm::value_ptr(invModelView));
 
     glBegin(GL_QUADS);
-    glVertex3d(-SQUARE_SIZE, -SQUARE_SIZE, 0);
-    glVertex3d(-SQUARE_SIZE, SQUARE_SIZE, 0);
-    glVertex3d(SQUARE_SIZE, SQUARE_SIZE, 0);
-    glVertex3d(SQUARE_SIZE, -SQUARE_SIZE, 0);
+    glVertex3d(OFFSET.x - SQUARE_SIZE, OFFSET.y - SQUARE_SIZE, 0);
+    glVertex3d(OFFSET.x - SQUARE_SIZE, OFFSET.y + SQUARE_SIZE, 0);
+    glVertex3d(OFFSET.x + SQUARE_SIZE, OFFSET.y + SQUARE_SIZE, 0);
+    glVertex3d(OFFSET.x + SQUARE_SIZE, OFFSET.y - SQUARE_SIZE, 0);
     glEnd();
 
     glUseProgram(0);

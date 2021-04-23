@@ -54,7 +54,7 @@ private:
 
   static constexpr double TAG_SIZE = 0.08333333333;
   static constexpr double SQUARE_SIZE = 0.05;
-  static constexpr glm::vec3 OFFSET{ 0.0, -0.125, SQUARE_SIZE / 2 };
+  static constexpr glm::vec3 OFFSET{ 0.0, -0.125, 0.025 };
 
   struct alignas(16) OctreeNode {
     uint hits;
