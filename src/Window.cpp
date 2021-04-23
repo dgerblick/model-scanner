@@ -102,15 +102,15 @@ Window::Window(const std::string& deviceName,
   Octree octree;
   octree.depth = OCTREE_DEPTH;
   octree.size = sizeof(octree.nodes) / sizeof(OctreeNode);
+  octree.nodes[0].total = 1;
   octree.nodes[0].hits = 0;
-  octree.nodes[0].total = 0;
   octree.nodes[0].minPoint = glm::vec4(glm::vec3(-SQUARE_SIZE), 1.0);
   octree.nodes[0].maxPoint = glm::vec4(glm::vec3(SQUARE_SIZE), 1.0);
   for (size_t i = 1; i < octree.size; ++i) {
     OctreeNode& node = octree.nodes[i];
     OctreeNode& parent = octree.nodes[(size_t)((i - 1.0) / 8.0)];
-    node.hits = 0;
-    node.total = 0;
+    node.total = std::rand() % 100 + 1;
+    node.hits = std::rand() % node.total;
     node.minPoint.w = 1.0;
     node.maxPoint.w = 1.0;
     for (size_t j = 0; j < 3; ++j) {

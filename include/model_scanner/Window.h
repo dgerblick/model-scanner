@@ -54,10 +54,10 @@ private:
 
   static constexpr double TAG_SIZE = 0.08333333333;
   static constexpr double SQUARE_SIZE = 0.05;
-  static constexpr glm::vec3 OFFSET{ 0.0, -0.125, 0.0 };
-  static constexpr uint OCTREE_DEPTH = 2;
+  static constexpr glm::vec3 OFFSET{ 0.0, -0.125, SQUARE_SIZE / 2 };
+  static constexpr uint OCTREE_DEPTH = 5;
 
-  struct OctreeNode {
+  struct alignas(16) OctreeNode {
     uint hits;
     uint total;
     uint _unused[2];
@@ -65,10 +65,9 @@ private:
     glm::vec4 maxPoint;
   };
 
-  struct Octree {
+  struct alignas(16) Octree {
     uint depth;
     uint size;
-    uint _unused[2];
     OctreeNode nodes[(size_t)(((1 - std::pow(8.0, OCTREE_DEPTH + 1)) / -7))];
   };
 };
