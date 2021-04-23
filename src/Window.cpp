@@ -105,7 +105,7 @@ Window::Window(const std::string& deviceName,
   octreeHeader.depth = octreeDepth;
   octreeHeader.size = octreeNodeBuffer.size();
   octreeNodeBuffer[0].total = 1;
-  octreeNodeBuffer[0].hits = 0;
+  octreeNodeBuffer[0].hits = 1;
   octreeNodeBuffer[0].minPoint =
       glm::vec4(glm::vec3(-SQUARE_SIZE) + OFFSET, 1.0);
   octreeNodeBuffer[0].maxPoint =
@@ -113,8 +113,8 @@ Window::Window(const std::string& deviceName,
   for (size_t i = 1; i < octreeNodeBuffer.size(); ++i) {
     OctreeNode& node = octreeNodeBuffer[i];
     OctreeNode& parent = octreeNodeBuffer[(size_t)((i - 1.0) / 8.0)];
-    node.total = std::rand() % 100 + 1;
-    node.hits = std::rand() % node.total;
+    node.total = 1;
+    node.hits = 1;
     node.minPoint.w = 1.0;
     node.maxPoint.w = 1.0;
     for (size_t j = 0; j < 3; ++j) {

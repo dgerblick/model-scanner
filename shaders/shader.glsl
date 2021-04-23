@@ -173,7 +173,43 @@ Ray getRay(vec2 screenCoord, mat4 invProj, mat4 invModelView) {
 vec4 mask() {
   vec2 screenCoord = gl_FragCoord.xy / screenSize;
   vec4 pixel = texture(image, screenCoord);
-  if (pixel.r + pixel.g + pixel.b < 1.5)
+  bool isBackground = pixel.r + pixel.g + pixel.b < 1.5;
+  Ray ray = getRay(screenCoord, invProj, invModelView);
+
+  uint stack[STACK_SIZE] = uint[STACK_SIZE](0);
+  int stackIdx = 0;
+  stack[0] = 0;
+
+  RaycastHit bestHit;
+  bestHit.dist = 0.0;
+  bestHit.nodeIdx = 0;
+  bestHit.normal.origin = vec4(0.0);
+  bestHit.normal.dir = vec4(0.0);
+
+  while (stackIdx >= 0) {
+    uint nodeIdx = stack[stackIdx--];
+    Box box = getBox(nodeIdx);
+
+    RaycastHit hit = boxIntersect(box, ray);
+    if (hit.dist > 0) {
+      atomicAdd(octree.nodes[nodeIdx].total, 1);
+      if (isBackground)
+        atomicAdd(octree.nodes[nodeIdx].hits, 1);
+      for (uint i = 0; i < 8; i++) {
+        if (box.childrenIdx[i] != nodeIdx) {
+          stackIdx++;
+          if (stackIdx >= STACK_SIZE) {
+            fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            return fragColor;
+          }
+          stack[stackIdx] = box.childrenIdx[i];
+        }
+      }
+    }
+  }
+
+  
+  if (isBackground)
     return pixel;
   else
     return vec4(vec3(0), 1);
