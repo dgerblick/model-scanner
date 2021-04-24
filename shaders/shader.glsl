@@ -42,6 +42,7 @@ uniform sampler2D image;
 uniform vec2 screenSize;
 uniform mat4 invProj;
 uniform mat4 invModelView;
+uniform float threshold;
 
 out vec4 fragColor;
 
@@ -120,7 +121,7 @@ RaycastHit boxIntersect(Box box, Ray ray) {
   return hit;
 }
 
-RaycastHit octreeIntersect(Ray ray, float thresh) {
+RaycastHit octreeIntersect(Ray ray) {
   Ray normal;
 
   uint stack[STACK_SIZE] = uint[STACK_SIZE](0);
@@ -141,9 +142,10 @@ RaycastHit octreeIntersect(Ray ray, float thresh) {
     if (hit.dist > 0) {
       float ratio =
           float(octree.nodes[nodeIdx].hits) / octree.nodes[nodeIdx].total;
-      if (ratio >= thresh && (bestHit.dist == 0.0 || hit.dist < bestHit.dist)) {
+      if (ratio >= threshold &&
+          (bestHit.dist == 0.0 || hit.dist < bestHit.dist)) {
         bestHit = hit;
-      } else if (ratio < thresh) {
+      } else if (ratio < threshold) {
         for (uint i = 0; i < 8; i++) {
           if (box.childrenIdx[i] != nodeIdx) {
             stackIdx++;
@@ -208,7 +210,6 @@ vec4 mask() {
     }
   }
 
-  
   if (isBackground)
     return pixel;
   else
@@ -218,8 +219,7 @@ vec4 mask() {
 vec4 render() {
   vec2 screenCoord = gl_FragCoord.xy / screenSize;
   Ray ray = getRay(screenCoord, invProj, invModelView);
-  float thresh = 0.9;
-  RaycastHit hit = octreeIntersect(ray, thresh);
+  RaycastHit hit = octreeIntersect(ray);
 
   if (hit.dist == 0.0)
     return texture(image, screenCoord);

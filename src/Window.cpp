@@ -2,17 +2,19 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <fstream>
 #include <sstream>
+#include <model_scanner/Octree.h>
 
 namespace model_scanner {
 
 Window::Window(const std::string& deviceName,
-               const std::string& calibrationFile, uint octreeDepth,
+               const std::string& calibrationFile, uint32_t octreeDepth,
                GLuint width, GLuint height, const std::string& winname)
   : _camera(deviceName, calibrationFile),
     _aprilTagDetector(_camera),
     _width(width),
     _height(height),
-    _winname(winname) {
+    _winname(winname),
+    _threshold(0.9) {
   if (gWindow != nullptr) {
     std::cerr << "Error: Global Window object already exists, nothing will be "
               << "done for window " << _winname << std::endl;
@@ -99,9 +101,9 @@ Window::Window(const std::string& deviceName,
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-  std::vector<OctreeNode> octreeNodeBuffer(
+  std::vector<Octree::Node> octreeNodeBuffer(
       (size_t)(((1 - std::pow(8.0, octreeDepth + 1)) / -7)));
-  OctreeHeader octreeHeader;
+  Octree::Header octreeHeader;
   octreeHeader.depth = octreeDepth;
   octreeHeader.size = octreeNodeBuffer.size();
   octreeNodeBuffer[0].total = 1;
@@ -111,8 +113,8 @@ Window::Window(const std::string& deviceName,
   octreeNodeBuffer[0].maxPoint =
       glm::vec4(glm::vec3(SQUARE_SIZE) + OFFSET, 1.0);
   for (size_t i = 1; i < octreeNodeBuffer.size(); ++i) {
-    OctreeNode& node = octreeNodeBuffer[i];
-    OctreeNode& parent = octreeNodeBuffer[(size_t)((i - 1.0) / 8.0)];
+    Octree::Node& node = octreeNodeBuffer[i];
+    Octree::Node& parent = octreeNodeBuffer[(size_t)((i - 1.0) / 8.0)];
     node.total = 1;
     node.hits = 1;
     node.minPoint.w = 1.0;
@@ -130,13 +132,13 @@ Window::Window(const std::string& deviceName,
   glGenBuffers(1, &_shaderOctreeSsbo);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, _shaderOctreeSsbo);
   glBufferData(GL_SHADER_STORAGE_BUFFER,
-               sizeof(OctreeHeader) +
-                   sizeof(OctreeNode) * octreeNodeBuffer.size(),
+               sizeof(Octree::Header) +
+                   sizeof(Octree::Node) * octreeNodeBuffer.size(),
                nullptr, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(OctreeHeader),
+  glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Octree::Header),
                   &octreeHeader);
-  glBufferSubData(GL_SHADER_STORAGE_BUFFER, sizeof(OctreeHeader),
-                  sizeof(OctreeNode) * octreeNodeBuffer.size(),
+  glBufferSubData(GL_SHADER_STORAGE_BUFFER, sizeof(Octree::Header),
+                  sizeof(Octree::Node) * octreeNodeBuffer.size(),
                   &octreeNodeBuffer[0]);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   GLint status;
@@ -172,6 +174,7 @@ Window::Window(const std::string& deviceName,
   _shaderScreenSizeLoc = glGetUniformLocation(_prog, "screenSize");
   _shaderinvProjLoc = glGetUniformLocation(_prog, "invProj");
   _shaderInvModelViewLoc = glGetUniformLocation(_prog, "invModelView");
+  _shaderThresholdLoc = glGetUniformLocation(_prog, "threshold");
 }
 
 Window::~Window() {
@@ -218,6 +221,7 @@ void Window::render1() {
     glUniformMatrix4fv(_shaderinvProjLoc, 1, GL_FALSE, glm::value_ptr(invProj));
     glUniformMatrix4fv(_shaderInvModelViewLoc, 1, GL_FALSE,
                        glm::value_ptr(invModelView));
+    glUniform1f(_shaderThresholdLoc, _threshold);
 
     glBegin(GL_QUADS);
     glVertex2d(0.0, 0.0);
@@ -281,6 +285,7 @@ void Window::render2() {
     glUniformMatrix4fv(_shaderinvProjLoc, 1, GL_FALSE, glm::value_ptr(invProj));
     glUniformMatrix4fv(_shaderInvModelViewLoc, 1, GL_FALSE,
                        glm::value_ptr(invModelView));
+    glUniform1f(_shaderThresholdLoc, _threshold);
 
     glBegin(GL_QUADS);
     glVertex3d(OFFSET.x - SQUARE_SIZE, OFFSET.y - SQUARE_SIZE, 0);
@@ -310,8 +315,8 @@ void Window::render3() {
   gluOrtho2D(0, 1, 0, 1);
 
   glm::mat4 invProj = glm::inverse(_projMatrix);
-  glm::mat4 invModelView = glm::inverse(
-      glm::lookAt(glm::vec3(0.1, 0.1, 0.1) + OFFSET, OFFSET, glm::vec3(0, 0, 1)));
+  glm::mat4 invModelView = glm::inverse(glm::lookAt(
+      glm::vec3(0.1, 0.1, 0.1) + OFFSET, OFFSET, glm::vec3(0, 0, 1)));
 
   glUseProgram(_prog);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, _shaderOctreeSsbo);
@@ -322,6 +327,7 @@ void Window::render3() {
   glUniformMatrix4fv(_shaderinvProjLoc, 1, GL_FALSE, glm::value_ptr(invProj));
   glUniformMatrix4fv(_shaderInvModelViewLoc, 1, GL_FALSE,
                      glm::value_ptr(invModelView));
+  glUniform1f(_shaderThresholdLoc, _threshold);
 
   glBegin(GL_QUADS);
   glVertex2d(0.0, 0.0);
