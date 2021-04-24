@@ -303,6 +303,38 @@ void Window::render2() {
 }
 
 void Window::render3() {
+  glBindFramebuffer(GL_FRAMEBUFFER, _frameBuffers[3]);
+  glPushMatrix();
+
+  glClear(GL_DEPTH_BUFFER_BIT);
+  gluOrtho2D(0, 1, 0, 1);
+
+  glm::mat4 invProj = glm::inverse(_projMatrix);
+  glm::mat4 invModelView = glm::inverse(
+      glm::lookAt(glm::vec3(0.1, 0.1, 0.1) + OFFSET, OFFSET, glm::vec3(0, 0, 1)));
+
+  glUseProgram(_prog);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, _shaderOctreeSsbo);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _shaderOctreeSsbo);
+  glUniform1ui(_shaderMaskModeLoc, 0);
+  glUniform1ui(_shaderTexLoc, 0);
+  glUniform2f(_shaderScreenSizeLoc, _camera.width, _camera.height);
+  glUniformMatrix4fv(_shaderinvProjLoc, 1, GL_FALSE, glm::value_ptr(invProj));
+  glUniformMatrix4fv(_shaderInvModelViewLoc, 1, GL_FALSE,
+                     glm::value_ptr(invModelView));
+
+  glBegin(GL_QUADS);
+  glVertex2d(0.0, 0.0);
+  glVertex2d(1.0, 0.0);
+  glVertex2d(1.0, 1.0);
+  glVertex2d(0.0, 1.0);
+  glEnd();
+
+  glUseProgram(0);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+  glPopMatrix();
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Window::idle() {
