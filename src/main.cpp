@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
   glutInit(&argc, argv);
 
   std::string source = "/dev/video0";
-  std::string outputDir = "untitled";
+  std::string outputFile = "model.stl";
   std::string cameraInfo = "camera_info.yml";
   uint octreeDepth = 4;
 
@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
         break;
       }
       case 'o':
-        outputDir = optarg;
+        outputFile = optarg;
         break;
       case 'c':
         cameraInfo = optarg;
@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  model_scanner::Window window(source, cameraInfo, octreeDepth);
+  model_scanner::Window window(source, cameraInfo, outputFile, octreeDepth);
   glutMainLoop();
   return 0;
 }

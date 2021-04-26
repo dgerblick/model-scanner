@@ -6,14 +6,15 @@
 #include <glm/matrix.hpp>
 #include <model_scanner/Camera.h>
 #include <model_scanner/AprilTagDetector.h>
+#include <model_scanner/Octree.h>
 
 namespace model_scanner {
 
 class Window {
 public:
   Window(const std::string& deviceName, const std::string& calibrationFile,
-         uint32_t octreeDepth = 4, GLuint width = 0, GLuint height = 0,
-         const std::string& winname = "Model Scanner");
+         const std::string& outFileName, int octreeDepth, GLuint width = 0,
+         GLuint height = 0, const std::string& winname = "Model Scanner");
   ~Window();
 
 private:
@@ -31,6 +32,8 @@ private:
 
   glm::mat4 _projMatrix;
   float _threshold;
+  Octree _octree;
+  std::string _outFileName;
 
   GLuint _prog;
   GLuint _shaderMaskModeLoc;
@@ -49,6 +52,7 @@ private:
   static void idle();
   static void resize(int width, int height);
   static void display();
+  static void keyboard(unsigned char key, int x, int y);
 
   static std::string loadFile(const std::string& filename);
 
@@ -56,7 +60,7 @@ private:
 
   static constexpr double TAG_SIZE = 0.08333333333;
   static constexpr double SQUARE_SIZE = 0.05;
-  static constexpr glm::vec3 OFFSET{ 0.0, -0.125, 0.025 };
+  static constexpr glm::vec3 OFFSET{ 0.0, -0.125, SQUARE_SIZE };
 };
 
 }  // namespace model_scanner

@@ -2,19 +2,22 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <fstream>
 #include <sstream>
-#include <model_scanner/Octree.h>
 
 namespace model_scanner {
 
 Window::Window(const std::string& deviceName,
-               const std::string& calibrationFile, uint32_t octreeDepth,
-               GLuint width, GLuint height, const std::string& winname)
+               const std::string& calibrationFile,
+               const std::string& outFileName, int octreeDepth, GLuint width,
+               GLuint height, const std::string& winname)
   : _camera(deviceName, calibrationFile),
     _aprilTagDetector(_camera),
     _width(width),
     _height(height),
     _winname(winname),
-    _threshold(0.9) {
+    _threshold(0.9),
+    _octree(glm::vec4(glm::vec3(-SQUARE_SIZE) + OFFSET, 1.0),
+            glm::vec4(glm::vec3(SQUARE_SIZE) + OFFSET, 1.0), octreeDepth),
+    _outFileName(outFileName) {
   if (gWindow != nullptr) {
     std::cerr << "Error: Global Window object already exists, nothing will be "
               << "done for window " << _winname << std::endl;
@@ -69,6 +72,7 @@ Window::Window(const std::string& deviceName,
   glutIdleFunc(Window::idle);
   glutReshapeFunc(Window::resize);
   glutDisplayFunc(Window::display);
+  glutKeyboardFunc(Window::keyboard);
 
   glEnable(GL_DEPTH_TEST);
 
@@ -101,45 +105,10 @@ Window::Window(const std::string& deviceName,
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-  std::vector<Octree::Node> octreeNodeBuffer(
-      (size_t)(((1 - std::pow(8.0, octreeDepth + 1)) / -7)));
-  Octree::Header octreeHeader;
-  octreeHeader.depth = octreeDepth;
-  octreeHeader.size = octreeNodeBuffer.size();
-  octreeNodeBuffer[0].total = 1;
-  octreeNodeBuffer[0].hits = 1;
-  octreeNodeBuffer[0].minPoint =
-      glm::vec4(glm::vec3(-SQUARE_SIZE) + OFFSET, 1.0);
-  octreeNodeBuffer[0].maxPoint =
-      glm::vec4(glm::vec3(SQUARE_SIZE) + OFFSET, 1.0);
-  for (size_t i = 1; i < octreeNodeBuffer.size(); ++i) {
-    Octree::Node& node = octreeNodeBuffer[i];
-    Octree::Node& parent = octreeNodeBuffer[(size_t)((i - 1.0) / 8.0)];
-    node.total = 1;
-    node.hits = 1;
-    node.minPoint.w = 1.0;
-    node.maxPoint.w = 1.0;
-    for (size_t j = 0; j < 3; ++j) {
-      if ((((i - 1) % 8) & (1 << j)) >> j == 0) {
-        node.minPoint[j] = parent.minPoint[j];
-        node.maxPoint[j] = (parent.minPoint[j] + parent.maxPoint[j]) / 2;
-      } else {
-        node.minPoint[j] = (parent.minPoint[j] + parent.maxPoint[j]) / 2;
-        node.maxPoint[j] = parent.maxPoint[j];
-      }
-    }
-  }
   glGenBuffers(1, &_shaderOctreeSsbo);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, _shaderOctreeSsbo);
-  glBufferData(GL_SHADER_STORAGE_BUFFER,
-               sizeof(Octree::Header) +
-                   sizeof(Octree::Node) * octreeNodeBuffer.size(),
-               nullptr, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Octree::Header),
-                  &octreeHeader);
-  glBufferSubData(GL_SHADER_STORAGE_BUFFER, sizeof(Octree::Header),
-                  sizeof(Octree::Node) * octreeNodeBuffer.size(),
-                  &octreeNodeBuffer[0]);
+  _octree.bindData();
+  _octree.bindSubData();
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   GLint status;
 
@@ -406,6 +375,34 @@ void Window::display() {
   glPopAttrib();
 
   glutSwapBuffers();
+}
+
+void Window::keyboard(unsigned char key, int x, int y) {
+  switch (key) {
+    case 13:  // Enter
+      std::cout << "Writing model to " << gWindow->_outFileName << "...";
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, gWindow->_shaderOctreeSsbo);
+      gWindow->_octree.update();
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+      gWindow->_octree.write(gWindow->_outFileName, gWindow->_threshold);
+      std::cout << " Done!" << std::endl;
+      break;
+    case 27:  // Escape
+      exit(0);
+      break;
+    case ' ':
+      gWindow->_octree.clear();
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, gWindow->_shaderOctreeSsbo);
+      gWindow->_octree.bindSubData();
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+      break;
+    default:
+      break;
+  }
+  if (key == 13) {
+  } else if (key == 27) {
+    std::cout << "Escape pressed" << std::endl;
+  }
 }
 
 std::string Window::loadFile(const std::string& filename) {

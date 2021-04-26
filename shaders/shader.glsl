@@ -5,7 +5,8 @@
 struct OctreeNode {
   uint hits;
   uint total;
-  uint _unused[2];
+  uint depth;
+  uint _unused;
   vec4 minPoint;
   vec4 maxPoint;
 };
@@ -53,7 +54,7 @@ Box getBox(uint nodeIdx) {
   box.parentIdx = uint((float(idx) - 1.0) / 8.0);
   for (uint i = 0; i < 8; ++i) {
     box.childrenIdx[i] = 8 * idx + i + 1;
-    if (box.childrenIdx[i] >= octree.nodes.length())
+    if (box.childrenIdx[i] >= octree.size)
       box.childrenIdx[i] = idx;
   }
   box.minPoint = octree.nodes[idx].minPoint;
@@ -145,16 +146,15 @@ RaycastHit octreeIntersect(Ray ray) {
       if (ratio >= threshold &&
           (bestHit.dist == 0.0 || hit.dist < bestHit.dist)) {
         bestHit = hit;
-      } else if (ratio < threshold) {
+      } else if (ratio < threshold &&
+                 octree.nodes[nodeIdx].depth != octree.depth) {
         for (uint i = 0; i < 8; i++) {
-          if (box.childrenIdx[i] != nodeIdx) {
-            stackIdx++;
-            if (stackIdx >= STACK_SIZE) {
-              fragColor = vec4(1.0, 0.0, 0.0, 1.0);
-              return bestHit;
-            }
-            stack[stackIdx] = box.childrenIdx[i];
+          stackIdx++;
+          if (stackIdx >= STACK_SIZE) {
+            fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            return bestHit;
           }
+          stack[stackIdx] = box.childrenIdx[i];
         }
       }
     }
@@ -197,8 +197,8 @@ vec4 mask() {
       atomicAdd(octree.nodes[nodeIdx].total, 1);
       if (isBackground)
         atomicAdd(octree.nodes[nodeIdx].hits, 1);
-      for (uint i = 0; i < 8; i++) {
-        if (box.childrenIdx[i] != nodeIdx) {
+      if (octree.nodes[nodeIdx].depth != octree.depth) {
+        for (uint i = 0; i < 8; i++) {
           stackIdx++;
           if (stackIdx >= STACK_SIZE) {
             fragColor = vec4(1.0, 0.0, 0.0, 1.0);
