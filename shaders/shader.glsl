@@ -175,7 +175,7 @@ Ray getRay(vec2 screenCoord, mat4 invProj, mat4 invModelView) {
 vec4 mask() {
   vec2 screenCoord = gl_FragCoord.xy / screenSize;
   vec4 pixel = texture(image, screenCoord);
-  bool isBackground = pixel.r + pixel.g + pixel.b < 1.5;
+  bool isBackground = (pixel.r + pixel.g + pixel.b) / 3.0 < 0.6;
   Ray ray = getRay(screenCoord, invProj, invModelView);
 
   uint stack[STACK_SIZE] = uint[STACK_SIZE](0);

@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
 
   std::string source = "/dev/video0";
   std::string outputFile = "model.stl";
-  std::string cameraInfo = "camera_info.yml";
+  std::string cameraInfo = "";
   uint octreeDepth = 4;
 
   static struct option longopts[] = {
